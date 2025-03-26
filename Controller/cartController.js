@@ -105,9 +105,9 @@ const cartController = {
       ]);
 
      const findProductIndex =   getCart[0].items.findIndex((item)=>item.product_variant_id.toString() === product_variant_id )
-if(findProductIndex > -1){
-  getCart[0].items[findProductIndex].item_total_price
-}
+// if(findProductIndex > -1){
+//   getCart[0].items[findProductIndex].item_total_price
+// }
 
     } catch (error) {
       if (error.name === "ValidationError") {
