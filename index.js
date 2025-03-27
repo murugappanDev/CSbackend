@@ -5,6 +5,7 @@ import { connectDB } from "./DBAccess/dbConfig.js";
 import userRouter from "./Router/userRoutes.js";
 import productRouter from "./Router/productRoutes.js";
 import cartRouter from "./Router/cartRoutes.js";
+import wishListRouter from "./Router/wishlistRoutes.js";
 
 const app = express();
 dotenv.config();
@@ -18,6 +19,8 @@ connectDB();
 app.use("/user", userRouter)
 app.use("/product", productRouter)
 app.use("/cart", cartRouter)
+app.use("/wishlist", wishListRouter)
+
 
 
 app.listen(port, () => {

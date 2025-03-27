@@ -65,7 +65,6 @@ const productController = {
   getAllProduct: async (req, res) => {
     try {
       const getAllProduct = await productModel.find();
-      console.log(getAllProduct)
       if (!getAllProduct) {
         return failedResponse(res, "Failed To Fetch Product Data", []);
       }
@@ -96,11 +95,9 @@ const productController = {
   updateProduct: async (req, res) => {
     try {
       const productID = req.params.id;
-      console.log(productID);
       if (!productID || !mongoose.Types.ObjectId.isValid(productID)) {
         return InvalidDataResponse(res, "Please check Data Format");
       }
-      console.log(req.body);
       const {
         product_name,
         description,
@@ -121,7 +118,6 @@ const productController = {
           stock: item?.stock ?? 0,
         };
       });
-      console.log(getAllItems);
       const body = {
         product_name,
         description,

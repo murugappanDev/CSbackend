@@ -12,6 +12,7 @@ import {
   InvalidAuthorizationResponse,
 } from "../utils/responseHelper.js";
 import cartModel from "../Model/CartModel.js";
+import wishListModel from "../Model/wishListModel.js";
 
 const userController = {
   createUser: async (req, res) => {
@@ -35,7 +36,6 @@ const userController = {
       };
 
       const newUser = await userModel.create(userBody);
-      console.log(newUser._id);
       const cartBody = {
         user_id: newUser._id,
         items: [],
@@ -43,11 +43,15 @@ const userController = {
       };
 
       const createCart = await cartModel.create(cartBody);
+      const createWishlist = await wishListModel({
+        user_id: newUser._id,
+        products: [],
+      });
 
       const deletedPassword = newUser.toObject();
       delete deletedPassword.password;
 
-      if (!newUser || !createCart) {
+      if (!newUser || !createCart || !createWishlist) {
         return failedResponse(res, "create user Failed", []);
       }
 
@@ -67,7 +71,6 @@ const userController = {
       ) {
         return duplicateResponse(res, "Email", error.message);
       }
-      console.log(error);
       return internalServerErrorResponse(res, error.message);
     }
   },
@@ -124,7 +127,6 @@ const userController = {
             []
           );
         }
-        console.log(authAccess);
         req.user = authAccess;
         next();
       });
@@ -135,7 +137,6 @@ const userController = {
   adminVerification: async (req, res, next) => {
     try {
       const token = req?.headers?.["authorization"];
-      console.log(token);
       if (!token) {
         return InvalidAuthorizationResponse(
           res,
@@ -153,7 +154,6 @@ const userController = {
             []
           );
         }
-        console.log(admin);
 
         if (admin.user_role !== "admin") {
           return InvalidAuthorizationResponse(
