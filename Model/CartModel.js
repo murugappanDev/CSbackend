@@ -24,6 +24,10 @@ const cartItemSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  is_available: {
+    type: Boolean,
+    required: true,
+  },
 });
 
 const cartSchema = new mongoose.Schema(

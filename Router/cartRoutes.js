@@ -4,8 +4,8 @@ import { userVerificationToken } from "../Controller/userController.js";
 
 const cartRouter = Router();
 
-cartRouter.route("/add").post(addToCart);
-cartRouter.route("/remove").post(removeToCart);
+cartRouter.route("/add").post(userVerificationToken,addToCart);
+cartRouter.route("/remove").post(userVerificationToken,removeToCart);
 cartRouter.route("/get").get(userVerificationToken,getCart);
 
 

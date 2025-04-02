@@ -7,19 +7,20 @@ import {
   InvalidDataResponse,
   successResponse,
 } from "../utils/responseHelper.js";
+import productModel from "../Model/productModel.js";
 
 const cartController = {
   addToCart: async (req, res) => {
     try {
+      const user_id = req.user._id;
       const {
-        user_id,
         product_id,
         product_variant_id,
         no_of_product,
         product_selling_price,
+        is_available,
       } = req.body;
       const requiredField = [
-        "user_id",
         "product_id",
         "product_variant_id",
         "no_of_product",
@@ -33,6 +34,8 @@ const cartController = {
         );
       }
       let getCart = await cartModel.findOne({ user_id: user_id });
+      console.log(getCart);
+
       if (!getCart) {
         getCart = await cartModel.create({
           user_id: user_id,
@@ -57,29 +60,32 @@ const cartController = {
           no_of_product,
           product_selling_price,
           item_total_price: itemTotalPrice,
+          is_available: is_available,
         });
       }
-      getCart.cart_total += itemTotalPrice;
+      getCart.cart_total = getCart.items.reduce(
+        (sum, item) => sum + item.item_total_price,
+        0
+      );
       await getCart.save();
       successResponse(res, "Product Added Successfully", getCart);
     } catch (error) {
       if (error.name === "ValidationError") {
-        return InvalidDataResponse(res, "Data Format", req.body, updatedCart);
+        return InvalidDataResponse(res, "Data Format", req.body);
       }
       return internalServerErrorResponse(res, error.message);
     }
   },
   removeToCart: async (req, res) => {
+    const user_id = req.user._id;
     try {
       const {
-        user_id,
         product_id,
         product_variant_id,
         no_of_product,
         product_selling_price,
       } = req.body;
       const requiredField = [
-        "user_id",
         "product_id",
         "product_variant_id",
         "no_of_product",
@@ -104,7 +110,7 @@ const cartController = {
           },
         },
       });
-
+      console.log(getCart);
       if (!getCart) {
         return failedResponse(res, "Cannot Find product", req.body);
       }
@@ -153,19 +159,56 @@ const cartController = {
   getCart: async (req, res) => {
     try {
       const user_id = req.user._id;
-      const getCart = await cartModel.find({ user_id: user_id });
+      let getCart = await cartModel.find({ user_id: user_id });
+
       if (getCart.length === 0) {
         return failedResponse(res, "Failed to fetch data", []);
       }
       if (getCart[0].items.length === 0) {
         return successResponse(
           res,
-          "No data Found In Cart Please add something in card",
+          "No data Found In Cart. Please add something to the cart.",
           []
         );
       }
+
+      const ExistingProduct = getCart[0].items.map(
+        (products) => products.product_variant_id
+      );
+      let product = await productModel.find({
+        "items._id": { $in: ExistingProduct },
+      });
+
+      const data = [];
+      product.forEach((prod) => prod.items.forEach((Qty) => data.push(Qty)));
+
+      const filteredData = data.filter((items) =>
+        ExistingProduct.map((id) => id.toString()).includes(
+          items._id.toString()
+        )
+      );
+      getCart[0].items = getCart[0].items.map((cartItem) => {
+        const matchingProduct = filteredData.find(
+          (product) =>
+            product._id.toString() === cartItem.product_variant_id.toString()
+        );
+        if (matchingProduct) {
+          cartItem.product_selling_price = matchingProduct.selling_price;
+          cartItem.item_total_price =
+            cartItem.no_of_product * cartItem.product_selling_price;
+          cartItem.is_available = matchingProduct.is_available;
+        }
+        return cartItem;
+      });
+      getCart[0].cart_total = getCart[0].items.reduce(
+        (sum, item) => sum + item.item_total_price,
+        0
+      );
+      await getCart[0].save();
+
       return successResponse(res, "Cart Data Fetched", getCart);
     } catch (error) {
+      console.log(error);
       return internalServerErrorResponse(res, error.message);
     }
   },

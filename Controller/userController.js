@@ -17,7 +17,7 @@ import wishListModel from "../Model/wishListModel.js";
 const userController = {
   createUser: async (req, res) => {
     try {
-      const { user_name, password, email, mobile_no } = req.body;
+      const { user_name, password, email, mobile_no,user_role } = req.body;
       const requiredField = ["user_name", "password", "email", "mobile_no"];
       const checkRequiredField = checkAllFields(req.body, requiredField);
 
@@ -32,7 +32,7 @@ const userController = {
         email: email.toLowerCase(),
         mobile_no,
         password: hashPassword,
-        user_role: "user",
+        user_role: user_role ?? "user"
       };
 
       const newUser = await userModel.create(userBody);

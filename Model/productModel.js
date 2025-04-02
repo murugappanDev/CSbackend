@@ -35,6 +35,7 @@ const productSchema = new mongoose.Schema(
         discount: { type: Number, default: 0 },
         selling_price: { type: Number, required: true },
         stock: { type: Number, default: 0 },
+        is_available: { type: Boolean, default: true },
       },
     ],
     category: {
@@ -50,12 +51,12 @@ const productSchema = new mongoose.Schema(
     reviews: [
       {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "REVIEWS",
+        ref: "Review",
       },
     ],
     created_by: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "USER",
+      ref: "User",
       required: true,
     },
   },

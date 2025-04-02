@@ -28,7 +28,7 @@ const productController = {
           stock: item?.stock ?? 0,
         };
       });
-      const createdBy = req?.admin?._id;
+      const   createdBy = req?.admin?._id;
       const body = {
         product_name,
         description,
@@ -111,10 +111,8 @@ const productController = {
           quantity: item?.quantity,
           actual_price: item?.actual_price ?? 0,
           discount: item?.discount ?? 0,
-
           selling_price:
             item?.actual_price - item?.actual_price * (item?.discount / 100),
-
           stock: item?.stock ?? 0,
         };
       });
