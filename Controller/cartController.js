@@ -159,52 +159,77 @@ const cartController = {
   getCart: async (req, res) => {
     try {
       const user_id = req.user._id;
-      let getCart = await cartModel.find({ user_id: user_id });
+      let getCart = await cartModel.findOne({ user_id: user_id });
 
       if (getCart.length === 0) {
         return failedResponse(res, "Failed to fetch data", []);
       }
-      if (getCart[0].items.length === 0) {
+      if (getCart.items.length === 0) {
         return successResponse(
           res,
           "No data Found In Cart. Please add something to the cart.",
           []
         );
       }
-
-      const ExistingProduct = getCart[0].items.map(
-        (products) => products.product_variant_id
+      const cartProductsID = getCart.items.map(
+        (prdID) => prdID.product_variant_id
       );
-      let product = await productModel.find({
-        "items._id": { $in: ExistingProduct },
-      });
 
-      const data = [];
-      product.forEach((prod) => prod.items.forEach((Qty) => data.push(Qty)));
-
-      const filteredData = data.filter((items) =>
-        ExistingProduct.map((id) => id.toString()).includes(
-          items._id.toString()
-        )
+      const getCartProducts = await productModel.aggregate([
+        { $unwind: "$items" },
+        { $match: { "items._id": { $in: cartProductsID } } },
+        { $project: { _id: 0, items: 1 } },
+      ]);
+      const mappedProduct = new Map(
+        getCartProducts.map((prod) => [prod.items._id.toString(), prod.items])
       );
-      getCart[0].items = getCart[0].items.map((cartItem) => {
-        const matchingProduct = filteredData.find(
-          (product) =>
-            product._id.toString() === cartItem.product_variant_id.toString()
-        );
-        if (matchingProduct) {
-          cartItem.product_selling_price = matchingProduct.selling_price;
-          cartItem.item_total_price =
-            cartItem.no_of_product * cartItem.product_selling_price;
-          cartItem.is_available = matchingProduct.is_available;
+      getCart.items = getCart.items.map((cartProd) => {
+        console.log(cartProd)
+        const isMatched = mappedProduct.get(cartProd.product_variant_id.toString());
+        if (isMatched) {
+          cartProd.product_selling_price = isMatched.selling_price || 0;
+          cartProd.is_available = isMatched.is_available;
+          cartProd.item_total_price =
+          cartProd.no_of_product * cartProd.product_selling_price;
+        } else {
+          cartProd.item_total_price = 0; // Prevent NaN issues
         }
-        return cartItem;
+        return cartProd;
       });
-      getCart[0].cart_total = getCart[0].items.reduce(
-        (sum, item) => sum + item.item_total_price,
-        0
-      );
-      await getCart[0].save();
+await getCart.save()    
+  // const ExistingProduct = getCart[0].items.map(
+      //   (products) => products.product_variant_id
+      // );
+      // let product = await productModel.find({
+      //   "items._id": { $in: ExistingProduct },
+      // });
+
+      // const data = [];
+      // product.forEach((prod) => prod.items.forEach((Qty) => data.push(Qty)));
+
+      // const filteredData = data.filter((items) =>
+      //   ExistingProduct.map((id) => id.toString()).includes(
+      //     items._id.toString()
+      //   )
+      // );
+      // getCart[0].items = getCart[0].items.map((cartItem) => {
+      //   const matchingProduct = filteredData.find(
+      //     (product) =>
+      //       product._id.toString() === cartItem.product_variant_id.toString()
+      //   );
+      //   if (matchingProduct) {
+      //     cartItem.product_selling_price = matchingProduct.selling_price;
+      //     cartItem.item_total_price =
+      //       cartItem.no_of_product * cartItem.product_selling_price;
+      //     cartItem.is_available = matchingProduct.is_available;
+      //   }
+      //   return cartItem;
+      // });
+      // getCart[0].cart_total = getCart[0].items.reduce(
+      //   (sum, item) => sum + item.item_total_price,
+      //   0
+      // );
+      // await getCart[0].save();
 
       return successResponse(res, "Cart Data Fetched", getCart);
     } catch (error) {
