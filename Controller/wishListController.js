@@ -10,7 +10,8 @@ import wishListModel from "../Model/wishListModel.js";
 const wishListController = {
   addToWishList: async (req, res) => {
     try {
-      const { user_id, product_id } = req.body;
+      const user_id = req.user._id
+      const {  product_id } = req.body;
 
       if (
         !mongoose.Types.ObjectId.isValid(user_id) ||
@@ -54,7 +55,8 @@ const wishListController = {
   },
   removeToWishList: async (req, res) => {
     try {
-      const { user_id, product_id } = req.body;
+      const user_id = req.user._id
+      const {  product_id } = req.body;
       if (
         !mongoose.Types.ObjectId.isValid(user_id) ||
         !mongoose.Types.ObjectId.isValid(product_id)

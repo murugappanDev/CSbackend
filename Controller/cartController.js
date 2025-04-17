@@ -34,7 +34,6 @@ const cartController = {
         );
       }
       let getCart = await cartModel.findOne({ user_id: user_id });
-      console.log(getCart);
 
       if (!getCart) {
         getCart = await cartModel.create({
@@ -110,7 +109,6 @@ const cartController = {
           },
         },
       });
-      console.log(getCart);
       if (!getCart) {
         return failedResponse(res, "Cannot Find product", req.body);
       }
@@ -151,7 +149,7 @@ const cartController = {
       successResponse(res, "Product removed Successfully", getCart);
     } catch (error) {
       if (error.name === "ValidationError") {
-        return InvalidDataResponse(res, "Data Format", req.body, updatedCart);
+        return InvalidDataResponse(res, "Data Format", req.body, req.body);
       }
       return internalServerErrorResponse(res, error.message);
     }
@@ -184,52 +182,20 @@ const cartController = {
         getCartProducts.map((prod) => [prod.items._id.toString(), prod.items])
       );
       getCart.items = getCart.items.map((cartProd) => {
-        console.log(cartProd)
-        const isMatched = mappedProduct.get(cartProd.product_variant_id.toString());
+        const isMatched = mappedProduct.get(
+          cartProd.product_variant_id.toString()
+        );
         if (isMatched) {
           cartProd.product_selling_price = isMatched.selling_price || 0;
           cartProd.is_available = isMatched.is_available;
           cartProd.item_total_price =
-          cartProd.no_of_product * cartProd.product_selling_price;
+            cartProd.no_of_product * cartProd.product_selling_price;
         } else {
-          cartProd.item_total_price = 0; // Prevent NaN issues
+          cartProd.item_total_price = 0;
         }
         return cartProd;
       });
-await getCart.save()    
-  // const ExistingProduct = getCart[0].items.map(
-      //   (products) => products.product_variant_id
-      // );
-      // let product = await productModel.find({
-      //   "items._id": { $in: ExistingProduct },
-      // });
-
-      // const data = [];
-      // product.forEach((prod) => prod.items.forEach((Qty) => data.push(Qty)));
-
-      // const filteredData = data.filter((items) =>
-      //   ExistingProduct.map((id) => id.toString()).includes(
-      //     items._id.toString()
-      //   )
-      // );
-      // getCart[0].items = getCart[0].items.map((cartItem) => {
-      //   const matchingProduct = filteredData.find(
-      //     (product) =>
-      //       product._id.toString() === cartItem.product_variant_id.toString()
-      //   );
-      //   if (matchingProduct) {
-      //     cartItem.product_selling_price = matchingProduct.selling_price;
-      //     cartItem.item_total_price =
-      //       cartItem.no_of_product * cartItem.product_selling_price;
-      //     cartItem.is_available = matchingProduct.is_available;
-      //   }
-      //   return cartItem;
-      // });
-      // getCart[0].cart_total = getCart[0].items.reduce(
-      //   (sum, item) => sum + item.item_total_price,
-      //   0
-      // );
-      // await getCart[0].save();
+      await getCart.save();
 
       return successResponse(res, "Cart Data Fetched", getCart);
     } catch (error) {

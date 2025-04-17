@@ -6,6 +6,7 @@ import userRouter from "./Router/userRoutes.js";
 import productRouter from "./Router/productRoutes.js";
 import cartRouter from "./Router/cartRoutes.js";
 import wishListRouter from "./Router/wishlistRoutes.js";
+import orderRouter from "./Router/orderRoutes.js";
 
 const app = express();
 dotenv.config();
@@ -20,6 +21,8 @@ app.use("/user", userRouter)
 app.use("/product", productRouter)
 app.use("/cart", cartRouter)
 app.use("/wishlist", wishListRouter)
+app.use("/order", orderRouter)
+
 
 
 
