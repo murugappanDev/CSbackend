@@ -157,45 +157,124 @@ const cartController = {
   getCart: async (req, res) => {
     try {
       const user_id = req.user._id;
-      let getCart = await cartModel.findOne({ user_id: user_id });
+      let getCart = await cartModel.aggregate([
+        {
+          $match: {
+            user_id: new mongoose.Types.ObjectId(user_id),
+          },
+        },
+        { $unwind: { path: "$items", preserveNullAndEmptyArrays: true } }, // Unwind items, keep empty carts
+        {
+          $lookup: {
+            from: "products",
+            localField: "items.product_id",
+            foreignField: "_id",
+            as: "productREF",
+          },
+        },
+        {
+          $unwind: { path: "$productREF", preserveNullAndEmptyArrays: true }, // Unwind productREF, keep items without products
+        },
+        {
+          $addFields: {
+            matchedVariant: {
+              $filter: {
+                input: "$productREF.items",
+                as: "variant",
+                cond: { $eq: ["$$variant._id", "$items.product_variant_id"] },
+              },
+            },
+          },
+        },
+        {
+          $unwind: {
+            path: "$matchedVariant",
+            preserveNullAndEmptyArrays: true,
+          }, // Unwind matched variant
+        },
+        {
+          $group: {
+            _id: "$_id", // Group by cart _id to collect all items
+            user_id: { $first: "$user_id" },
+            items: {
+              $push: {
+                $cond: [
+                  { $ne: ["$items", {}] }, // Only include valid items
+                  {
+                    product_id: "$items.product_id",
+                    product_name: "$productREF.product_name",
+                    product_variant_id: "$items.product_variant_id",
+                    product_variant_name: "$matchedVariant.name", // Adjust field name as needed
+                    no_of_product: "$items.no_of_product",
+                    product_selling_price: "$matchedVariant.selling_price", // Adjust field name as needed
+                    item_total_price: "$items.item_total_price",
+                    _id: "$items._id",
+                  },
+                  null,
+                ],
+              },
+            },
+            cart_total: { $first: "$cart_total" },
+            createdAt: { $first: "$createdAt" },
+            updatedAt: { $first: "$updatedAt" },
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            user_id: 1,
+            items: {
+              $filter: {
+                input: "$items",
+                as: "item",
+                cond: { $ne: ["$$item", null] }, // Remove null items
+              },
+            },
+            cart_total: 1,
+            createdAt: 1,
+            updatedAt: 1,
+          },
+        },
+      ]);
+      
 
       if (getCart.length === 0) {
         return failedResponse(res, "Failed to fetch data", []);
       }
-      if (getCart.items.length === 0) {
+      if (getCart[0].items.length === 0) {
         return successResponse(
           res,
           "No data Found In Cart. Please add something to the cart.",
           []
         );
       }
-      const cartProductsID = getCart.items.map(
-        (prdID) => prdID.product_variant_id
-      );
+      // const cartProductsID = getCart.items.map(
+      //   (prdID) => prdID.product_variant_id
+      // );
 
-      const getCartProducts = await productModel.aggregate([
-        { $unwind: "$items" },
-        { $match: { "items._id": { $in: cartProductsID } } },
-        { $project: { _id: 0, items: 1 } },
-      ]);
-      const mappedProduct = new Map(
-        getCartProducts.map((prod) => [prod.items._id.toString(), prod.items])
-      );
-      getCart.items = getCart.items.map((cartProd) => {
-        const isMatched = mappedProduct.get(
-          cartProd.product_variant_id.toString()
-        );
-        if (isMatched) {
-          cartProd.product_selling_price = isMatched.selling_price || 0;
-          cartProd.is_available = isMatched.is_available;
-          cartProd.item_total_price =
-            cartProd.no_of_product * cartProd.product_selling_price;
-        } else {
-          cartProd.item_total_price = 0;
-        }
-        return cartProd;
-      });
-      await getCart.save();
+      // const getCartProducts = await productModel.aggregate([
+      //   { $unwind: "$items" },
+      //   { $match: { "items._id": { $in: cartProductsID } } },
+      //   { $project: { _id: 0, items: 1 } },
+      // ]);
+      // const mappedProduct = new Map(
+      //   getCartProducts.map((prod) => [prod.items._id.toString(), prod.items])
+      // );
+      // getCart.items = getCart.items.map((cartProd) => {
+      //   const isMatched = mappedProduct.get(
+      //     cartProd.product_variant_id.toString()
+      //   );
+      //   if (isMatched) {
+      //     cartProd.product_selling_price = isMatched.selling_price || 0;
+      //     cartProd.is_available = isMatched.is_available;
+      //     cartProd.item_total_price =
+      //       cartProd.no_of_product * cartProd.product_selling_price;
+      //   } else {
+      //     cartProd.item_total_price = 0;
+      //   }
+      //   return cartProd;
+      // });
+      // await getCart.save();
 
       return successResponse(res, "Cart Data Fetched", getCart);
     } catch (error) {
