@@ -208,6 +208,8 @@ const cartController = {
                     no_of_product: "$items.no_of_product",
                     product_selling_price: "$matchedVariant.selling_price", // Adjust field name as needed
                     item_total_price: "$items.item_total_price",
+                    item_stocks: "$matchedVariant.stock",
+                    item_is_available: "$matchedVariant.is_available",
                     _id: "$items._id",
                   },
                   null,
@@ -236,7 +238,6 @@ const cartController = {
           },
         },
       ]);
-      
 
       if (getCart.length === 0) {
         return failedResponse(res, "Failed to fetch data", []);

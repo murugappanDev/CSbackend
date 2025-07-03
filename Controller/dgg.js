@@ -1,50 +1,36 @@
-let getCart = await cartModel.aggregate([
+db["wishlists"].aggregate([
   {
     $match: {
-      user_id: new mongoose.Types.ObjectId(user_id),
+      user_id: ObjectId("67eb88b60fb61a214d3ca23d"),
     },
   },
-  { $unwind: { path: "$items", preserveNullAndEmptyArrays: true } }, // Unwind items, keep empty carts
+  { $unwind: { path: "$products" } },
   {
     $lookup: {
       from: "products",
-      localField: "items.product_id",
+      localField: "products.product_id",
       foreignField: "_id",
       as: "productREF",
     },
   },
   {
-    $unwind: { path: "$productREF", preserveNullAndEmptyArrays: true }, // Unwind productREF, keep items without products
-  },
-  {
-    $addFields: {
-      matchedVariant: {
-        $filter: {
-          input: "$productREF.items",
-          as: "variant",
-          cond: { $eq: ["$$variant._id", "$items.product_variant_id"] },
-        },
-      },
+    $unwind: {
+      path: "$productREF",
+      preserveNullAndEmptyArrays: false,
     },
   },
-  {
-    $unwind: {
-      path: "$matchedVariant",
-      preserveNullAndEmptyArrays: true,
-    }, // Unwind matched variant
-  },
+
   {
     $group: {
-      _id: "$_id",
-      user_id: { $first: "$user_id" },
-      items: {
+      _id: "$user_id",
+      total_items: { $sum: 1 },
+
+      products: {
         $push: {
-          product_id: "$items.product_id",
+          product_id: "products.product_id",
           product_name: "$productREF.product_name",
         },
-       
       },
-      cart_total:{$first:"$cart_total"}
     },
   },
 ]);

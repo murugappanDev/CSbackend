@@ -29,6 +29,9 @@ const productSchema = new mongoose.Schema(
             "1kg",
             "2kg",
             "5kg",
+            "1No",
+            "5No",
+            "10No",
           ],
         },
         actual_price: { type: Number, required: true },
@@ -41,7 +44,13 @@ const productSchema = new mongoose.Schema(
     category: {
       type: String,
       required: true,
-      enum: ["Spices", "Pickle", "Traditional Rice", "Podi", "Snacks"],
+      enum: [
+        "Spices",
+        "Pickles",
+        "Traditional Rice & Millet",
+        "Podi",
+        "Snacks",
+      ],
     },
     image: [
       {
